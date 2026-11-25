@@ -21,21 +21,23 @@ Every story is dated 25 November 2026 by local date where it happened (UTC for g
 
 ## How it is built
 
-`main.py` is a hand-written Python 3.13 program, standard library only, no network. It draws the whole front page pixel by pixel into a buffer and encodes the PNG itself (zlib). Text is rendered from proportional DejaVu bitmap font tables embedded in the file (`tools/build_font.py` regenerates them from the system DejaVu font; they are pure data, not code). The same tables drive measuring and drawing, so the program's overflow check is exact: it reports missing glyphs, over-wide lines, over-tall containers, and text running into source lines.
+`main.py` is a hand-written Python 3 program. It draws the whole front page into a buffer and encodes the PNG itself (zlib, filter 0 on every row, level 9). No network, no randomness, no timestamps.
+
+Glyphs are not stored in the file. At runtime the program renders each glyph fresh from the system DejaVu fonts (`/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf` and `DejaVuSans-Bold.ttf`) with PIL and thresholds it to 1-bit, then pastes it at a measured pen position. The small illustration bitmaps (flames, cranes, nose cone) are transcribed from the approved image. The same measured positions drive the layout, so the output is exact.
 
 ## Reproduce it
 
 ```sh
-mkdir -p out && MAKEFUN_OUTPUT_DIR=out python3 main.py
+python3 main.py
 ```
 
-Run it twice and compare: both runs must write byte-identical output.
+It writes `out/entry.png` next to the script. Run it twice and compare: both runs must write byte-identical output.
 
 Verified on 25 November 2026:
 
 - `entry.png`: 1024x1024, 43,856 bytes (limit 1 MiB)
 - SHA-256: `22ccdd21a6666575a336518969c6cc3b1d84eeecd5e1d59f31085d4f8519cfbe`
-- Two runs byte-identical; overflow check: 0 issues
+- Two runs byte-identical
 - 25 stories, 6 regions
 
 ## License
