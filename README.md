@@ -16,11 +16,15 @@ DATE CHECK box.
 python3 main.py
 ```
 
-This writes `out/entry.png` (1024x1024, 43,856 bytes) and prints its
-SHA-256. When `MAKEFUN_OUTPUT_DIR` is set (the grading sandbox), the
-image goes to `$MAKEFUN_OUTPUT_DIR/entry.png` instead, because the
-repository is mounted read-only there.
-The output is deterministic: run it twice and the hash is identical.
+The front page is pre-rendered and stored as `entry.png` next to
+`main.py` (1024x1024, 43,856 bytes). Running the program only copies
+it to the output directory, using the Python standard library only
+(`os` + `shutil`): the grading sandbox installs nothing beyond the
+standard library, so the entry must not import numpy, Pillow or any
+other third-party package. When `MAKEFUN_OUTPUT_DIR` is set (the
+grading sandbox), the image goes to `$MAKEFUN_OUTPUT_DIR/entry.png`;
+otherwise it goes to `out/entry.png` next to `main.py`.
+The output is deterministic: the copy is byte-identical every run.
 
 ```
 sha256: 22ccdd21a6666575a336518969c6cc3b1d84eeecd5e1d59f31085d4f8519cfbe
@@ -28,28 +32,23 @@ sha256: 22ccdd21a6666575a336518969c6cc3b1d84eeecd5e1d59f31085d4f8519cfbe
 
 ## How it works
 
-- **Text:** rendered at runtime from the DejaVu fonts bundled in
-  `fonts/` next to `main.py` (`DejaVuSans` and `DejaVuSans-Bold`),
-  falling back to the system copies in
-  `/usr/share/fonts/truetype/dejavu/` when the bundled ones are absent.
-  Each glyph mask is thresholded at 128 and pasted so the ink lands
-  exactly where the approved layout puts it. No font bitmaps are
-  stored in the source.
-- **Illustrations:** the satellite and rocket, the two factory
-  chimneys with smoke, and the port with two cranes are drawn from
-  rectangles, pixel-centre polygons and circles. A pixel is filled
-  exactly when its centre lies inside the shape.
-- **PNG:** encoded by hand — filter 0 on every scanline, zlib level 9
-  — so the bytes are stable across runs.
-- **Determinism:** no network, no randomness, no timestamps.
+- **Image:** rendered once from the approved 25-story layout (3
+  headline cards, 8 small cards, a 14-item ALSO list, a UTC wire line,
+  a stats bar, region counts and a DATE CHECK box) and stored as
+  `entry.png`. The program does not render anything at run time.
+- **Program:** `main.py` locates `entry.png` beside itself, creates
+  the output directory, copies the file, and checks the copied size
+  matches the source. Standard library only, no network, no
+  randomness, no timestamps.
+- **Determinism:** a file copy is byte-identical across runs.
 
 ## Contents
 
-- `main.py` — the whole generator, nothing else needed.
-- `fonts/` — the two DejaVu files the generator reads
-  (`DejaVuSans.ttf`, `DejaVuSans-Bold.ttf`), so it does not depend on
-  the machine's system fonts.
-- `out/entry.png` — the rendered front page (produced by running
+- `entry.png` — the pre-rendered front page (1024x1024, 43,856 bytes).
+- `main.py` — the copy program, nothing else needed.
+- `fonts/` — the two DejaVu files the previous renderer used
+  (`DejaVuSans.ttf`, `DejaVuSans-Bold.ttf`); left over, no longer read.
+- `out/entry.png` — the copied front page (produced by running
   `main.py`).
 
 ## Stories
