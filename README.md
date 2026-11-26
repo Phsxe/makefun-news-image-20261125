@@ -16,7 +16,10 @@ DATE CHECK box.
 python3 main.py
 ```
 
-This writes `out.png` (1024x1024, 43,856 bytes) and prints its SHA-256.
+This writes `out/entry.png` (1024x1024, 43,856 bytes) and prints its
+SHA-256. When `MAKEFUN_OUTPUT_DIR` is set (the grading sandbox), the
+image goes to `$MAKEFUN_OUTPUT_DIR/entry.png` instead, because the
+repository is mounted read-only there.
 The output is deterministic: run it twice and the hash is identical.
 
 ```
@@ -25,8 +28,10 @@ sha256: 22ccdd21a6666575a336518969c6cc3b1d84eeecd5e1d59f31085d4f8519cfbe
 
 ## How it works
 
-- **Text:** rendered at runtime from the DejaVu fonts installed on the
-  machine (`DejaVuSans` and `DejaVuSans-Bold`), one glyph at a time.
+- **Text:** rendered at runtime from the DejaVu fonts bundled in
+  `fonts/` next to `main.py` (`DejaVuSans` and `DejaVuSans-Bold`),
+  falling back to the system copies in
+  `/usr/share/fonts/truetype/dejavu/` when the bundled ones are absent.
   Each glyph mask is thresholded at 128 and pasted so the ink lands
   exactly where the approved layout puts it. No font bitmaps are
   stored in the source.
@@ -41,7 +46,11 @@ sha256: 22ccdd21a6666575a336518969c6cc3b1d84eeecd5e1d59f31085d4f8519cfbe
 ## Contents
 
 - `main.py` — the whole generator, nothing else needed.
-- `out.png` — the rendered front page (produced by running `main.py`).
+- `fonts/` — the two DejaVu files the generator reads
+  (`DejaVuSans.ttf`, `DejaVuSans-Bold.ttf`), so it does not depend on
+  the machine's system fonts.
+- `out/entry.png` — the rendered front page (produced by running
+  `main.py`).
 
 ## Stories
 

@@ -7,8 +7,14 @@ line, a stats bar, region counts and a DATE CHECK box. All text is
 rendered at runtime from the DejaVu fonts (thresholded at 128); the
 PNG is encoded by hand (filter 0 per row, zlib level 9) so the output
 is byte stable. No network, no randomness, no timestamps.
+
+The finished picture goes to $MAKEFUN_OUTPUT_DIR/entry.png when that
+variable is set (the grading sandbox), and to out/entry.png next to
+this file otherwise. The DejaVu files come from fonts/ next to this
+file when present, falling back to the system copies.
 """
 import hashlib
+import os
 import struct
 import zlib
 
@@ -31,13 +37,27 @@ BLUE = (46, 74, 122)
 ORANGE = (198, 96, 32)
 BRICK = (162, 72, 54)
 
-FONT_DIR = "/usr/share/fonts/truetype/dejavu/"
-F60B = ImageFont.truetype(FONT_DIR + "DejaVuSans-Bold.ttf", 60)
-F34B = ImageFont.truetype(FONT_DIR + "DejaVuSans-Bold.ttf", 34)
-F28B = ImageFont.truetype(FONT_DIR + "DejaVuSans-Bold.ttf", 28)
-F20B = ImageFont.truetype(FONT_DIR + "DejaVuSans-Bold.ttf", 20)
-F20 = ImageFont.truetype(FONT_DIR + "DejaVuSans.ttf", 20)
-F14 = ImageFont.truetype(FONT_DIR + "DejaVuSans.ttf", 14)
+def _font_file(name):
+    """Locate one DejaVu file: the copy in fonts/ beside this file
+    first, then the system copy. The grading sandbox runs the repo
+    read-only and may not ship the system fonts, so the entry carries
+    its own copies and only falls back to the system ones."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    bundled = os.path.join(here, "fonts", name)
+    if os.path.isfile(bundled):
+        return bundled
+    system = os.path.join("/usr/share/fonts/truetype/dejavu", name)
+    if os.path.isfile(system):
+        return system
+    return bundled
+
+
+F60B = ImageFont.truetype(_font_file("DejaVuSans-Bold.ttf"), 60)
+F34B = ImageFont.truetype(_font_file("DejaVuSans-Bold.ttf"), 34)
+F28B = ImageFont.truetype(_font_file("DejaVuSans-Bold.ttf"), 28)
+F20B = ImageFont.truetype(_font_file("DejaVuSans-Bold.ttf"), 20)
+F20 = ImageFont.truetype(_font_file("DejaVuSans.ttf"), 20)
+F14 = ImageFont.truetype(_font_file("DejaVuSans.ttf"), 14)
 
 img = np.zeros((H, W, 3), dtype=np.uint8)
 img[:, :] = BG
@@ -340,9 +360,26 @@ def encode_png(rgb):
     return png
 
 
-if __name__ == "__main__":
+def main():
+    """Render and write entry.png.
+
+    The grading sandbox mounts the repository read-only and hands us a
+    writable directory through $MAKEFUN_OUTPUT_DIR; writing anywhere
+    inside the repo would fail there, so the output goes to that
+    directory when it is set, and to out/ beside this file when run
+    locally."""
+    target = os.environ.get("MAKEFUN_OUTPUT_DIR")
+    if not target:
+        target = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
+    os.makedirs(target, exist_ok=True)
     data = encode_png(img)
-    with open("out.png", "wb") as f:
+    path = os.path.join(target, "entry.png")
+    with open(path, "wb") as f:
         f.write(data)
     print("sha256:", hashlib.sha256(data).hexdigest())
     print("bytes:", len(data))
+    print("wrote:", path)
+
+
+if __name__ == "__main__":
+    main()
